@@ -113,6 +113,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
+//refactor messageStream
 class ShowMessageStream extends StatelessWidget {
   const ShowMessageStream({
     Key? key,
@@ -129,20 +130,68 @@ class ShowMessageStream extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           final messages = snapshot.data!.docs;
-          List<Text> msgWidget = [];
+          List<MessageStyleBubble> msgWidget = [];
           for (var msgData in messages) {
             final text = msgData['text'];
             final sender = msgData['sender'];
-            final addMsgWidget = Text('$text from $sender');
+            final addMsgWidget = MessageStyleBubble(text: text, sender: sender);
             msgWidget.add(addMsgWidget);
           }
-          return Column(
-            children: msgWidget,
+          return Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(10.0),
+              children: msgWidget,
+            ),
           );
         } else {
           return const SizedBox();
         }
       },
+    );
+  }
+}
+
+//refactor and  styling MessageStyleBubble
+class MessageStyleBubble extends StatelessWidget {
+  final String text;
+  final String sender;
+  const MessageStyleBubble({
+    Key? key,
+    required this.text,
+    required this.sender,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            sender,
+            style: const TextStyle(
+              color: Colors.black38,
+              fontSize: 12.0,
+            ),
+          ),
+          Material(
+            elevation: 5.0,
+            borderRadius: BorderRadius.circular(10.0),
+            color: Colors.lightBlueAccent,
+            child: Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
