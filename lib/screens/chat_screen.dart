@@ -29,6 +29,22 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  // void getMessage() async {
+  //   QuerySnapshot messages = await _firestore.collection('messages').get();
+  //   for (var msgData in messages.docs) {
+  //     print(msgData.data());
+  //   }
+  // }
+
+  //getmessage using strean
+  // void getMessageStream() async {
+  //   await for (var snapshot in _firestore.collection('messages').snapshots()) {
+  //     for (var msgData in snapshot.docs) {
+  //       print(msgData.data());
+  //     }
+  //   }
+  // }
+
   @override
   void initState() {
     super.initState();
@@ -42,12 +58,13 @@ class _ChatScreenState extends State<ChatScreen> {
         leading: null,
         actions: <Widget>[
           IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () {
-                //Implement logout functionality
-                _auth.signOut();
-                Navigator.pop(context);
-              }),
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              //Implement logout functionality
+              _auth.signOut();
+              Navigator.pop(context);
+            },
+          ),
         ],
         title: const Text('⚡️Chat'),
         backgroundColor: Colors.lightBlueAccent,
@@ -57,6 +74,7 @@ class _ChatScreenState extends State<ChatScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            ShowMessageStream(firestore: _firestore),
             Container(
               decoration: kMessageContainerDecoration,
               child: Row(
@@ -91,6 +109,40 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class ShowMessageStream extends StatelessWidget {
+  const ShowMessageStream({
+    Key? key,
+    required FirebaseFirestore firestore,
+  })  : _firestore = firestore,
+        super(key: key);
+
+  final FirebaseFirestore _firestore;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore.collection('messages').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          final messages = snapshot.data!.docs;
+          List<Text> msgWidget = [];
+          for (var msgData in messages) {
+            final text = msgData['text'];
+            final sender = msgData['sender'];
+            final addMsgWidget = Text('$text from $sender');
+            msgWidget.add(addMsgWidget);
+          }
+          return Column(
+            children: msgWidget,
+          );
+        } else {
+          return const SizedBox();
+        }
+      },
     );
   }
 }
