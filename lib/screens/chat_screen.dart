@@ -16,6 +16,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late User loggedInUser;
   late String message;
+  final textfieldController = TextEditingController();
 
   void getCurrentUser() {
     try {
@@ -82,6 +83,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: <Widget>[
                   Expanded(
                     child: TextField(
+                      controller: textfieldController,
                       onChanged: (value) {
                         //Do something with the user input.
                         message = value;
@@ -92,6 +94,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   TextButton(
                     onPressed: () {
                       //Implement send functionality.
+                      textfieldController.clear();
                       debugPrint(message);
                       _firestore.collection('messages').add({
                         'sender': loggedInUser.email,
