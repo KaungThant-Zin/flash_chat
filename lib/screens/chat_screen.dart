@@ -3,6 +3,8 @@ import 'package:flash_chat/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+late User loggedInUser;
+
 class ChatScreen extends StatefulWidget {
   static String id = 'chat_screen';
   const ChatScreen({Key? key}) : super(key: key);
@@ -14,7 +16,6 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  late User loggedInUser;
   late String message;
   final textfieldController = TextEditingController();
 
@@ -99,6 +100,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       _firestore.collection('messages').add({
                         'sender': loggedInUser.email,
                         'text': message,
+                        'timestamp':
+                            DateTime.now().toUtc().millisecondsSinceEpoch,
                       });
                     },
                     child: const Text(
@@ -129,7 +132,10 @@ class ShowMessageStream extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: _firestore.collection('messages').snapshots(),
+      stream: _firestore
+          .collection('messages')
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           final messages = snapshot.data!.docs;
@@ -137,17 +143,24 @@ class ShowMessageStream extends StatelessWidget {
           for (var msgData in messages) {
             final text = msgData['text'];
             final sender = msgData['sender'];
-            final addMsgWidget = MessageStyleBubble(text: text, sender: sender);
+            final addMsgWidget = MessageStyleBubble(
+              text: text,
+              sender: sender,
+              isMe: sender == loggedInUser.email,
+            );
             msgWidget.add(addMsgWidget);
           }
           return Expanded(
             child: ListView(
+              reverse: true,
               padding: const EdgeInsets.all(10.0),
               children: msgWidget,
             ),
           );
         } else {
-          return const SizedBox();
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
         }
       },
     );
@@ -156,12 +169,14 @@ class ShowMessageStream extends StatelessWidget {
 
 //refactor and  styling MessageStyleBubble
 class MessageStyleBubble extends StatelessWidget {
+  final bool isMe;
   final String text;
   final String sender;
   const MessageStyleBubble({
     Key? key,
     required this.text,
     required this.sender,
+    required this.isMe,
   }) : super(key: key);
 
   @override
@@ -169,7 +184,8 @@ class MessageStyleBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Text(
             sender,
@@ -180,16 +196,26 @@ class MessageStyleBubble extends StatelessWidget {
           ),
           Material(
             elevation: 5.0,
-            borderRadius: BorderRadius.circular(20.0),
-            color: Colors.lightBlueAccent,
+            borderRadius: isMe
+                ? const BorderRadius.only(
+                    bottomLeft: Radius.circular(20.0),
+                    bottomRight: Radius.circular(20.0),
+                    topLeft: Radius.circular(20.0),
+                  )
+                : const BorderRadius.only(
+                    bottomLeft: Radius.circular(20.0),
+                    bottomRight: Radius.circular(20.0),
+                    topRight: Radius.circular(20.0),
+                  ),
+            color: isMe ? Colors.lightBlueAccent : Colors.white,
             child: Padding(
               padding:
                   const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
               child: Text(
                 text,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16.0,
-                  color: Colors.white,
+                  color: isMe ? Colors.white : Colors.black,
                 ),
               ),
             ),
